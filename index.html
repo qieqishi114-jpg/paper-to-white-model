@@ -1,0 +1,31 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>文献转白模</title>
+<style>body{max-width:900px;margin:36px auto;padding:0 18px;font:16px system-ui;color:#18252a}textarea{width:100%;box-sizing:border-box;padding:10px}button{margin:10px 8px 10px 0;padding:9px 14px}pre{white-space:pre-wrap;background:#edf3f3;padding:12px}img{max-width:100%;max-height:300px}</style>
+<h1>文献转白模</h1><p>内柱十字形和边柱 T 形梁柱试件</p>
+<label>导入 PDF、DOCX、带标注图片或 TXT <input type=file id=source accept=".pdf,.docx,.png,.jpg,.jpeg,.txt"></label>
+<p>文字补充或修改</p><textarea id=req rows=4 placeholder="内柱；X向半跨 3000 mm，Y向半跨 2500 mm；梁截面 300×500 mm，柱截面 450×450 mm；柱高 3000 mm；梁高改成 550 mm 和 600 mm"></textarea>
+<button id=preview>提取参数并预览</button><pre id=msg>参数出处会显示在这里。</pre><img id=sketch alt="" hidden>
+<p>核对后可直接编辑参数。尺寸单位统一为 mm。</p><textarea id=params rows=12 spellcheck=false></textarea>
+<button id=export disabled>确认并下载批量白模</button>
+<script>
+const $=id=>document.getElementById(id);
+async function run(mode){
+ const f=new FormData(); f.set('mode',mode); f.set('request',$('req').value); f.set('parameters',$('params').value);
+ if(mode==='preview' && $('source').files[0]) f.set('source',$('source').files[0]);
+ $('preview').disabled=true; $('export').disabled=true; $('msg').textContent='处理中…';
+ try {
+  const r=await fetch('/build',{method:'POST',body:f});
+  if(!r.ok) throw Error(await r.text());
+  if(mode==='preview'){
+   const d=await r.json(); $('params').value=JSON.stringify(d.parameters,null,2);
+   $('msg').textContent=d.notes.join('\n'); $('sketch').hidden=!d.svg;
+   if(d.svg) $('sketch').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(d.svg);
+  }else{
+   const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());a.download='white-model.zip';a.click();
+   setTimeout(()=>URL.revokeObjectURL(a.href),1000); $('msg').textContent='已生成批量白模。解压后运行随包的 Abaqus 建模脚本，即可打开 CAE 装配。';
+  }
+ }catch(e){$('msg').textContent=e.message;}
+ finally{$('preview').disabled=false;$('export').disabled=!$('params').value;}
+}
+$('preview').onclick=()=>run('preview');$('export').onclick=()=>run('export');
+</script></html>
+

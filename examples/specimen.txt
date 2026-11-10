@@ -1,0 +1,2 @@
+Interior column. X half-span 3000 mm. Y half-span 2500 mm.
+Beam section 300 x 500 mm. Column section 450 x 450 mm. Column height 3000 mm.
